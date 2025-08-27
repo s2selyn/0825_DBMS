@@ -179,16 +179,16 @@ SELECT
  * ====================================================================================================
  * 				오라클 전용 구문				|				ANSI(오라클 + 타 DBMS) 구문
  * ====================================================================================================
- * 				등가조인						|						내부조인
- * 			(EQUAL JOIN)					|					(INNER JOIN)
+ * 					등가조인					|						내부조인
+ * 				(EQUAL JOIN)				|					(INNER JOIN)
  * ----------------------------------------------------------------------------------------------------
- * 				포괄조인						|
- * 			(LEFT OUTER)					|				왼쪽 외부조인(LEFT OUTER JOIN)
- * 			(RIGHT OUTER)					|				오른쪽 외부조인(RIGHT OUTER JOIN)
+ * 					포괄조인					|
+ * 				(LEFT OUTER)				|				왼쪽 외부조인(LEFT OUTER JOIN)
+ * 				(RIGHT OUTER)				|				오른쪽 외부조인(RIGHT OUTER JOIN)
  * 											|			전체 외부조인(FULL OUTER JOIN) -> 오라클에선X
  * ----------------------------------------------------------------------------------------------------
- * 				카테시안 곱					|						교차조인
- * 			(CARTESIAN PRODUCT)				|					(CROSS JOIN)
+ * 					카테시안 곱				|						교차조인
+ * 				(CARTESIAN PRODUCT)			|					(CROSS JOIN)
  * ----------------------------------------------------------------------------------------------------
  * 자체조인(SELF JOIN)
  * 비등가조인(NON EQUAL JOIN)
@@ -432,5 +432,514 @@ SELECT -- 여기까지는 똑같음, 시원하게 내가 조회하고 싶은 컬
 -- 얘를 제일 많이 씀, 프로젝트 할때도 이거랑 포괄조인정도?
 -- 팀원 6명이면 한명정도 자체조인 쓸수도있고
 -- 나머지는 알고만 있으면 되는 정도
+
+--------------------------------------------------
+
+-- 여러 컬럼을 하나의 ResultSet으로 받을 때 JOIN을 쓰면 좋다
+
+/*
+ * 2. 포괄조인 / 외부조인(OUTER JOIN)
+ * 
+ * 테이블간의 JOIN 시 일치하지 않는 행도 포함시켜서 ResultSet 반환
+ * 단, 반드시 LEFT / RIGHT를 지정해줘야 함!(기준 테이블을 선택해야함)
+ * 
+ * 어제는 INNER 안써도 INNER JOIN을 해줬음
+ * OUTER JOIN은 왼쪽을 쓰든 오른쪽을 쓰든 뭐든 하나는 써야함
+ * 
+ */
+-- EMPLOYEE테이블에 존재하는 "모든" 사원의 사원명, 부서명 조회
+-- 사원명은 EMPLOYEE, 부서명은 DEPARTMENT 테이블에 있음, 두개의 테이블이 다르니까 같이 조회하려면 JOIN해야함
+-- INNER JOIN
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       EMPLOYEE -- 여기까진 확정, 오라클 쓸지 ANSI 쓸지 결정
+-- INNER 안써도 인식함
+  JOIN
+       DEPARTMENT ON (DEPT_CODE = DEPT_ID); -- 이게 어제까지 했던거
+-- 조건이 "모든" 사원이었음, EMPLOYEE 테이블은 23행인데 21행까지밖에 안나옴, 23명걸 봐야함
+-- 이거 왜그럼? EMPLOYEE 테이블에서 DEPT_CODE에 부서가 없는 사람은 NULL값이 들어있으므로 일치하는 게 없어서 JOIN할 때 잘려서 못나옴
+-- EMPLOYEE 테이블에서 DEPT_CODE가 NULL인 두 명의 사원은 조회 X
+-- DEPARTMENT 테이블 입장에서도 마찬가지, DEPARTMENT 테이블에서 부서에 배정된 사원이 없는 부서(D3, D4, D7) 조회 X
+-- 이 문제는 OUTER JOIN에서 해결할수있다
+-- 오늘은 OUTER JOIN
+-- 어제는 오라클 먼저 했으니 오늘은 ANSI 먼저
+
+-- 1) LEFT [ OUTER ] JOIN : 두 테이블 중 왼편에 기술한 테이블을 기준으로 JOIN
+-- 9:20 조건을 적든 컬럼명을 적음
+-- 조건과는 상관없이 왼편에 기술한 테이블의 데이터는 전부 조회(일치하는 값을 못찾더라도 조회)
+
+--> ANSI
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       -- EMPLOYEE 기준 테이블
+       EMPLOYEE LEFT OUTER JOIN DEPARTMENT ON (DEPT_CODE = DEPT_ID);
+-- 한줄로 작성했다면 이렇게 생김
+-- 9:25 JOIN을 기준으로 왼쪽에 있는 테이블은 다 조회함
+       /*
+  LEFT
+-- OUTER 이걸 쓰는데 이 앞에 LEFT/RIGHT 붙어야함, 보편적으로 LEFT가(아마 RIGHT도) 붙으면 알아서 자연스럽게 OUTER, OUTER도 생략 가능
+  JOIN
+       DEPARTMENT ON (DEPT_CODE = DEPT_ID); -- INNER JOIN과 똑같이 생긴 상태로 시작
+*/
+-- 어제 INNER JOIN과 비교하면 LEFT만 붙음, OUTER는 안쓰니까
+
+--> ORACLE
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       EMPLOYEE, DEPARTMENT
+       -- ??? 한줄로 작성했을 때 이렇게 생김, EMPLOYEE에 있는 테이블을 싹다 나오게 하고싶음
+       -- 컬럼들이 DEPT_CODE는 EMPLOYEE에 있고, DEPT_TITLE은 DEPARTMENT에 있음
+       -- 오라클은 헷갈림, 내가 기준으로 삼고싶지 않은 아이의 컬럼명에 (+)을 붙임
+ WHERE -- JOIN절이 없으니까 WHERE절에 조건을 단다
+       DEPT_CODE = DEPT_ID(+); -- 일단 INNER JOIN 작성하고나서 수정
+-- 기준으로 삼지 않을 테이블의 컬럼에 (+)를 붙여준당
+
+-- 2) RIGHT [ OUTER ] JOIN : (기준 테이블의 위치만 바뀜) 두 테이블 중 오른편에 기술한 테이블을 기준으로 JOIN
+-- 일치하는 컬럼이 존재하지 않더라도 오른쪽 테이블의 데이터는 무우우조건 다 조회
+
+--> ANSI
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       EMPLOYEE
+ RIGHT
+  JOIN
+       DEPARTMENT ON (DEPT_CODE = DEPT_ID);
+-- 어제 INNER JOIN에 하나 더 붙은것
+
+-- ORACLE
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       EMPLOYEE
+     , DEPARTMENT
+ WHERE
+       DEPT_CODE(+) = DEPT_ID;
+-- 보통 관계형 DBMS를 쓴다면 ORACLE 또는 MY-SQL에서 고를텐데, 다 비슷하고 번호 붙일 때(채번할때) IDENTIFIED 해서 만드는게 다름
+-- 테이블 만들 때 자료형이 조금 다름, 나머지 다 똑같아서 ORACLE 하면
+-- MARIADB는 MYSQL이랑 똑같아서 오라클 배우면 세개 다 똑같아서 할 수 있음
+-- 오라클 구문은???????????????
+-- 컬럼명 적는 순서는 바뀌어도 상관없고 이름만 잘 적으면 됨
+
+-- 3) FULL [ OUTER ] JOIN : 두 테이블 가진 모든 행을 조회할 수 있는 조인
+-- 이름만 봐도 왼쪽 오른쪽을 다 해야겠다!
+--> ANSI
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       EMPLOYEE
+  FULL
+ OUTER
+  JOIN
+       DEPARTMENT ON (DEPT_CODE = DEPT_ID);
+
+--> ORACLE : 오라클 구문에서는 사용이 불가능!!
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+  FROM
+       EMPLOYEE
+     , DEPARTMENT
+ WHERE
+       DEPT_CODE(+) = DEPT_ID(+); -- outer-join된 테이블은 1개만 지정할 수 있습니다
+-- 어제 써놨음 오라클에선X, 오라클 구문으로는 사용이 안되는 못쓰는 문법
+
+--------------------------------------------------
+
+/*
+ * 3. 카테시안 곱(CARTESIAN PRODUCT) / 교차조인(CROSS JOIN)
+ * 모든 테이블의 각 행들을 서로서로 매핑해서 조회된(곱집합), 행들을 쌍쌍바로 곱한것 ** 사용금지 문법
+ * 이론 공부할때는 이렇게 해봤지만.. 이렇게 하면 안됨
+ * 
+ * 두 테이블의 행들이 곱해진 조합 뽑아냄 => 곱하는거기때문에 데이터가 많으면 많을수록 방대한 행이 생ㅇ겨남
+ * => SELECT 한번 했는데 하루 걸리는거지... 과부하의 위험
+ * 회사에서 이렇게 써버리면 아침 9시에 했는데 데이터가 2천만개씩 곱해버리면 이거하나 때려놓고 시원하게 커피마시러 가야함 아무것도 못함
+ * 까딱 잘못했다가 DB서버 망가지면 누가그랬어 로그 찾아보고 난리남
+ * 사용하면 안되지만 이론적으로는 알고있어야함
+ * 
+ */
+
+--> ORACLE
+SELECT EMP_NAME, DEPT_TITLE FROM EMPLOYEE, DEPARTMENT; -- 207행의 결과가 나옴, 23행 곱하기 9행 해서 각 행들의 곱해진 조합을 출력
+-- 어제 ㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓㅓ
+-- 컬럼이 같은것만 조회할 수 있도록.. 이 과정 자체를 카테시안 곱이라고 부름
+
+--> ANSI
+SELECT EMP_NAME, DEPT_TITLE FROM EMPLOYEE CROSS JOIN DEPARTMENT;
+-- 결과는 똑같이 나옴, CROSS JOIN이라고 부름
+
+--------------------------------------------------
+
+/* 
+ * 4. 비등가 조인(NON EQUAL JOIN)
+ * 같지 않은걸 찾는건가? 싶지만 EQUAL SIGN을 안 쓰는 조인이라는 뜻..ㅎ
+ * '='를 사용하지 않는 조인
+ * 일치하지 않는걸 찾는게 아니고 일치하는걸 찾는건데 EQUAL SIGN을 안써서
+ * 
+ * 컬럼값을 비교하는 경우가 아니라 "범위"에 포함되는 내용을 매칭
+ * 
+ */
+
+-- EMPLOYEE테이블로부터 사원명, 급여
+SELECT
+       EMP_NAME
+     , SALARY
+  FROM
+       EMPLOYEE;
+
+-- 테이블 중에 급여 등급을 저장하는게 있음
+SELECT * FROM SAL_GRADE; -- 범위에 포함되면 등급이 나오도록 되어있음
+-- 이걸 조인해서 사원들의 급여가 몇등급인지 조회해보자
+-- EMPLOYEE 테이블에도 ?/ 컬럼이 있어서 별칭짓기 해야함
+--> ORACLE
+SELECT
+       EMP_NAME
+     , SALARY
+     , SAL_GRADE.SAL_LEVEL
+     --, MIN_SAL, MAX_SAL 으로 카테시안 곱 해서 ????????????????
+  FROM
+       EMPLOYEE
+     , SAL_GRADE
+ WHERE
+       SALARY BETWEEN MIN_SAL AND MAX_SAL;
+
+--> ANSI
+SELECT
+       EMP_NAME
+     , SALARY
+     , SAL_GRADE.SAL_LEVEL
+  FROM
+       EMPLOYEE
+  JOIN
+       SAL_GRADE ON (SALARY BETWEEN MIN_SAL AND MAX_SAL); -- 똑같은 이름의 컬럼을 비교하는 게 아니니까 ON구문을 써서
+-- 범위에 포함된 것을 찾으면 NON EQUAL JOIN
+
+--------------------------------------------------
+
+-- 주로 쓰는것들, 쓰면 안되는것, 알고만 있으면 되는 것
+
+/* 
+ * 5. 자체조인(SELF JOIN)
+ * 프로젝트 하면 팀에서 한명정도 한번정도.. 누군가 한명은 사용하게 되는 경우가 있음
+ * 활용도가 높지는 않지만 특정 상황에서 필요한 경우가 생김
+ * 
+ * 같은 테이블을 다시 한 번 조인하는 경우
+ * 나랑 나랑 조인하기
+ * 자기자신의 테이블과 조인을 맺음
+ * 
+ */
+SELECT
+       EMP_ID "사원 번호"
+     , EMP_NAME "사원 이름"
+     , PHONE "전화번호"
+     , MANAGER_ID "사수 사번" -- 사수가 없으면 NULL값, 사수가 있으면 사수의 정보도 같이 조회하고싶음(하나의 ResultSet에서 같이 보고있음)
+     -- 사수의 정보도 EMPLOYEE 테이블에 있음, 같은 테이블
+  FROM
+       EMPLOYEE;
+
+SELECT EMP_ID, EMP_NAME, PHONE, MANAGER_ID FROM EMPLOYEE; -- 사원의 정보
+SELECT EMP_ID, EMP_NAME, PHONE FROM EMPLOYEE; -- 사수의 정보
+-- 두 결과를 하나의 RESULTSET에서 받고싶다
+
+--> ORACLE
+-- 사원사번, 사원명, 사원 폰번호, 사수번호
+-- 사수사번, 사수명, 사수 폰번호
+SELECT
+       E.EMP_ID, E.EMP_NAME, E.PHONE, E.MANAGER_ID -- 사원 정보
+     , M.EMP_ID, M.EMP_NAME, M.PHONE -- 사수 정보
+  FROM
+       EMPLOYEE E,
+       EMPLOYEE M -- 해석하는 입장에서 누구걸 가져오는지 구분이 안감, 테이블 명을 붙이는게 의미가 없음, 그래서 누군데? 이렇게됨 --> 별칭 --> 이렇게 하면 카테시안 곱(529개)
+       -- 이거 보고싶은게 아니라 E.의 MANAGER_ID랑 M.의 EMP_ID가 같은행만 뽑아내고싶음
+       -- 오라클 구문이니까 WHERE가 붙음
+ WHERE
+       E.MANAGER_ID = M.EMP_ID(+); -- EMPLOYEE 23명인데 15명 나옴, MANAGER_ID 없는 사원이 있음, 사수가 없어도 사원의 정보는 다 나와야함 --> OUTER JOIN --> 기준이 E니까 M에 (+)
+
+-- ANSI
+-- 똑같고 문법만 다르지, 별칭 미리 지었다고 가정하고 SELECT 구문 작성
+SELECT
+       E.EMP_ID, E.EMP_NAME, E.PHONE, E.MANAGER_ID,
+       M.EMP_ID, M.EMP_NAME, M.PHONE
+  FROM
+       EMPLOYEE E
+  LEFT
+  JOIN
+       EMPLOYEE M ON (E.MANAGER_ID = M.EMP_ID);
+
+--------------------------------------------------
+
+/*
+ *  < 다중 JOIN >
+ * 
+ */
+-- 사원명 + 부서명 + 직급명 + 지역명(LOCAL_NAME)
+-- 네개의 데이터를 한번에 조회하고싶음
+-- 네개가 전부 다 다른 테이블에 있음
+SELECT * FROM EMPLOYEE; 	-- 사원명, EMP_NAME		DEPT_CODE	JOB_CODE
+SELECT * FROM DEPARTMENT; 	-- 부서명, DEPT_TITLE		DEPT_ID					LOCATION_ID
+SELECT * FROM JOB;			-- 직급명, JOB_NAME					JOB_CODE
+SELECT * FROM LOCATION;		-- 지역명, LOCAL_NAME								LOCAL_CODE
+-- 네개의 테이블을 조인하려면 각 테이블마다 어떤 컬럼으로 매칭시켜야 하는가를 먼저 파악해야함
+-- EMPLOYEE + DEPARTMENT JOIN 시킬 연결고리 : DEPT_CODE + DEPT_ID
+-- DEPARTMENT + JOB을 연결시킬것이 없음
+-- EMPLOYEE + JOB을 연결시킬 것 : JOB_CODE
+-- LOCATION + DEPARTMENT를 연결시킬 것 : LOCAL_CODE + LOCATION_ID
+-- 누구랑 누구를 조인할지 정리해놓고 시작
+
+-- 개발할때도 항상 먼저 정리를 먼저 하고 그다음에 시작하는것
+-- 프로젝트 할 때도(나중에 하게될일) 항상 개발을 시작하기 전에 설계를 다 끝내놓고 시작해야함
+-- 어떤 기능, 어떻게, 구조, SQL, 응답데이터는 어떻게 받을거고 등등 다 짜놓고 시작, 어떤 클래스 이용해서 예외처리 할지, 입력값, ㅇㄴㅇㄹㅇㄴㅇㄹ
+-- 작은 프로젝트는 기획을 얼마나 세심하고 꼼꼼하게 어디까지 했느냐가 결과물 퀄리티를 좌우하미ㅣ다ㅣㅏㅓ기ㅏㅓ이ㅏㅓㅎ
+-- 절대 계획대로는 안되지만 짜놓고 시작하느냐 아니냐는 차이가 큼
+-- 주먹구구로 하면 안된다
+
+-- EMP_NAME, DEPT_TITLE, JOB_NAME, LOCAL_NAME
+--> ANSI 구문
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+     , JOB_NAME
+     , LOCAL_NAME
+  FROM
+       EMPLOYEE
+       /*
+  JOIN -- 순서를 잘 지켜야함, 앞에 있는 JOIN부터 차근차근 수행됨
+       LOCATION ON (LOCATION_ID = LOCAL_CODE);*/
+  LEFT
+  JOIN
+       DEPARTMENT ON (DEPT_CODE = DEPT_ID)
+  JOIN
+       JOB USING(JOB_CODE)
+  LEFT
+  JOIN
+       LOCATION ON (LOCATION_ID = LOCAL_CODE); -- 이러면 나오긴 나오는데 뭔가 이상함 --> 21개 행 --> DEPARTMENT가 없는 사원이 걸러짐
+-- ??? 한번더 걸러지는 곳이 있음, OUTER JOIN 한번더 해줘야함 --> LOCATION을 OUTER JOIN
+
+-- 처음에 어떤 컬럼을 매칭시킬 지 생각하고 시작하면 쉬움, 하면서 하려면 조금 어려움
+
+--> ORACLE
+SELECT
+       EMP_NAME
+     , DEPT_TITLE
+     , JOB_NAME
+     , LOCAL_NAME
+  FROM
+       EMPLOYEE E
+     , DEPARTMENT
+     , JOB J
+     , LOCATION
+ WHERE
+       DEPT_CODE = DEPT_ID(+)
+   AND
+       LOCATION_ID = LOCAL_CODE(+)
+   AND
+       E.JOB_CODE = J.JOB_CODE;
+
+-- 오라클보다는 ANSI가 보기좋네..
+
+--------------------------------------------------
+
+/*
+ * < 집합 연산자 SET OPERATOR >
+ * 
+ * JOIN이랑 결이 좀 다르긴 함, 수학익힘책의 벤다이어그램을 떠올려보자(합집합, 교집합, 차집합)
+ * 이거 구현할 때 씀
+ * 
+ * 여러 개의 쿼리문을 가지고 하나의 쿼리문으로 만드는 연산자
+ * 
+ * - UNION : 합집합(두 쿼리문의 수행 결과값을 더한 후 중복되는 부분을 제거)
+ * - INTERSECT : 교집합(두 쿼리문의 수행 결과값 중 중복된 부분)
+ * - MINUS : 차집합(선행 쿼리문 결과값 빼기 후행 쿼리문의 결과값을 한 결과)
+ * 
+ * 앞에 세 개 쓰잘데기 없고 이것만 기억
+ * - UNION ALL : 합집합의 결과에 교집합을 더한 개념
+ * (두 쿼리문을 수행한 결과값을 무조건 더함. 합집합에서 중복 제거를 하지 않는 것)
+ * => 중복행이 여러 번 조회 될 수 있음
+ * 
+ * 원래 합집합 하면 교집합 부분은 한번만
+ * A가 1,2,3 / B가 3,4,5 => 합집합 하면 1,2,3,4,5
+ * 이걸 UNION ALL 하면 1,2,3,3,4,5
+ * 개발자로 인생을 살다가 한번정도 이게 필요할때 쓸 수 있음
+ * 
+ */
+
+-- 1. UNION
+-- 부서코드가 D5인 사원들 조회
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'; -- 박세혁, 박수현, 박채형, 박현준, 배주영, 유성현(6행)
+
+-- 급여가 300만원 초과인 사원들
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       SALARY > 3000000; -- 이승철, 강병준, 강현성, 박성민, 박현준, 유성현, 채정민, 신국희(8행)
+
+-- 두개의 쿼리 결과를 합치고싶다!
+-- UNION 사용!
+-- 6행짜리를 복사해서 붙여넣기를 하고 8행짜리를 복사해서 붙여넣기를 하고, 두개(쿼리와 쿼리)의 사이에 UNION을 적음
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+ UNION
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       SALARY > 3000000;
+-- D5이거나 300 초과인것을 찾고싶은것, 중복된것은 날아가고 나머지를 합쳐서 조회됨
+-- 박현준, 유성현 사원 중복이니까 합친거 14행에서 2행 뺀 12행 출력
+-- 사실 쓰잘데기없음 그냥 OR 쓰면 되잖앙....
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+    OR
+       SALARY > 3000000;
+-- UNION쓰려면 SELECT절에 기술하는 컬럼이 같아야함
+
+-- 부서코드가 D1, D2, D5인 부서의 급여합계를 조회하고 싶다
+SELECT SUM(SALARY)
+  FROM EMPLOYEE
+ WHERE DEPT_CODE = 'D1'
+ UNION
+SELECT SUM(SALARY)
+  FROM EMPLOYEE
+ WHERE DEPT_CODE = 'D2'
+ UNION
+SELECT SUM(SALARY)
+  FROM EMPLOYEE
+ WHERE DEPT_CODE = 'D5';
+
+SELECT SUM(SALARY)
+  FROM EMPLOYEE
+ WHERE DEPT_CODE IN ('D1', 'D2', 'D5')
+ GROUP BY DEPT_CODE;
+-- UNION은 OR나 IN으로 대체할 수 있다.. 별로임
+-- 아 테이블 설계가 잘못된 거 아닌가? 또는 OR/IN으로 바꿀 수 있는데 왜이렇게 썼지?
+-- 별로인거 왜함? 이런거 볼수도 있고.. UNION ALL 의 선행지식이라서
+
+--------------------------------------------------
+
+-- 2. UNION ALL : 여러 개의 쿼리 결과를 무조건 합치는 연산자(중복 가능)
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+ UNION
+   ALL
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       SALARY > 3000000;
+-- 얘는 대체불가
+-- 중복 지원/당첨 이런거 잡아낼때 사용할수밖에없음
+
+--------------------------------------------------
+
+-- 3. INTERSECT (교집합 - 여러 쿼리 결과의 중복된 결과만을 조회)
+-- 앞뒤쿼리 겹치는것만 조회.. 사실 별로임 겹치는거 보고싶으면 AND 쓰면됨
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+INTERSECT
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       SALARY > 3000000;
+
+-- AND
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+   AND
+       SALARY > 3000000;
+
+--------------------------------------------------
+
+-- 4. MINUS (차집합 - 선행쿼리 결과에서 후행 쿼리결과를 뺀 나머지)
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+ MINUS
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       SALARY > 3000000; -- 6개에서 중복된 2개 빼서 4개 나옴
+-- 이건 다른 친구가 이 역할을 하기 어려움
+-- 근데 별로임ㅋ 얘만 빼고싶으면 SALARY 조건 꺼꾸로 쓰면 되징(와 관점의 전환 생각의 전환 이거 뭐임???)
+SELECT
+       EMP_NAME
+     , DEPT_CODE
+     , SALARY
+  FROM
+       EMPLOYEE
+ WHERE
+       DEPT_CODE = 'D5'
+   AND
+       SALARY <= 3000000;
+
+-- 아무튼 UNION ALL만 기억
 
 --------------------------------------------------
