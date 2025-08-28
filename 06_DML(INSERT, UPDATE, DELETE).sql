@@ -2,7 +2,7 @@
  * < DML : DATA MANIPULATION LANGUAGE >
  * 데이터 조작 언어
  * 
- * INSERT / UPDATE / DELETE(SELECT는 사흘저옫 했는데, 이거세개는 뭐 세시간이면 할지도..)
+ * INSERT / UPDATE / DELETE(SELECT는 사흘정도 했는데, 이거세개는 뭐 세시간이면 할지도..)
  * 논외 ) SELECT : 나는..? DML(신토불이) / DQL(요새)
  * 클래식은 SELECT를 DML에 껴줌, 모던은 SELECT를 DATA QUERY LANGUAGE(DQL)로 빼서 분류해버림
  * SELECT의 비중이 엄청 커짐, 데이터에 변화가 일어나지는 않음, 의미론적으로도 좀 껴주기 그럼..
@@ -118,7 +118,9 @@ CREATE TABLE  EMP_01(
 ); -- 이렇게 만들면 데이터 중복이라 안좋지만 배울 용도로 이런게 있다 하고 만들어봄~
 
 SELECT * FROM EMP_01;
+
 -- 기존에는 JOIN 해야하기도 하고, 서브쿼리로 INSERT 해보고 싶어서 만들어봄^^!
+
 -- EMPLOYEE테이블에 존재하는 모든 사원 사원명과, 부서명을 새로만든 EMP_01에 INSERT
 INSERT
   INTO
@@ -133,6 +135,7 @@ INSERT
         WHERE
               DEPT_CODE = DEPT_ID(+)
        );
+
 SELECT * FROM EMP_01; -- 데이터 중복이니까 좋은 방식은 아니지만 이렇게도 할 수 있다
 
 --------------------------------------------------
@@ -154,7 +157,9 @@ INSERT INTO EMP_01 VALUES('사원1', '부서1');
 INSERT INTO EMP_01 VALUES('사원2', '부서2');
 -- ...
 -- 이렇게 쓰고 각각 실행해야함
+
 SELECT * FROM EMP_01;
+
 INSERT INTO EMP_01 VALUES('사원3', '부서3'); -- UPDATED ROWS 1, EXECUTE TIME 0.002S, 이게 DB서버의 응답이 온 것
 -- EXECUTE TIME은 INSERT하는데 걸린 시간, 사실 별로 중요한게 아니고
 -- 중요한건 UPDATED ROWS, 처리결과가 왔는데, UPDATED ROWS 해서 얼마나 많은 행에 작업이 수행되었는지가 돌아왔음
@@ -332,3 +337,5 @@ TRUNCATE TABLE DEPT_COPY2; -- 0.027S
 -- ??? ㅎㅎ... 이론적으로...
 -- 우리는 DB서버와의 물리적 위치가 너무 가깝고 지우려고 하는 데이터가 적었음(10개도안됨)
 -- 지울게 수만개다? 수십만개다? 이러면 유의미적 차이가 날 수 도 ? 그럴일은 우리없음 그래서 이론적으로 ㅎ 살리기도 안되고 옵션도 안돼서
+
+-- 오늘의 목표 이거(DBMS) 끝내기
