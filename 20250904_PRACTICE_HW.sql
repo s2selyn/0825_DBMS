@@ -14,7 +14,7 @@ SELECT
  WHERE
        E.JOB_CODE = J.JOB_CODE
    AND
-       E.DEPT_CODE = D.DEPT_ID;
+       E.DEPT_CODE = D.DEPT_ID(+);
 
 -- 2. 부서명을 입력받아 부서가 동일한 사원 조회(총무부 입력시 총무부인 사원들만 조회되도록)
 SELECT
@@ -30,7 +30,7 @@ SELECT
  WHERE
        E.JOB_CODE = J.JOB_CODE
    AND
-       E.DEPT_CODE = D.DEPT_ID
+       E.DEPT_CODE = D.DEPT_ID(+)
    AND
        D.DEPT_TITLE = '사용자가 입력한 부서명' -- pstmt binding
  ORDER
@@ -51,7 +51,7 @@ SELECT
  WHERE
        E.JOB_CODE = J.JOB_CODE
    AND
-       E.DEPT_CODE = D.DEPT_ID
+       E.DEPT_CODE = D.DEPT_ID(+)
    AND
        J.JOB_NAME = '사용자가 입력한 직급명' -- pstmt binding
  ORDER
@@ -72,7 +72,7 @@ SELECT
  WHERE
        E.JOB_CODE = J.JOB_CODE
    AND
-       E.DEPT_CODE = D.DEPT_ID
+       E.DEPT_CODE = D.DEPT_ID(+)
    AND
        E.EMP_ID = '사용자가 입력한 사번' -- pstmt binding
  ORDER
@@ -101,7 +101,7 @@ SELECT
 		 WHERE
 		       E.JOB_CODE = J.JOB_CODE
 		   AND
-		       E.DEPT_CODE = D.DEPT_ID
+		       E.DEPT_CODE = D.DEPT_ID(+)
 		 ORDER
 		    BY
 		       SALARY DESC
@@ -130,7 +130,7 @@ SELECT
 		 WHERE
 		       E.JOB_CODE = J.JOB_CODE
 		   AND
-		       E.DEPT_CODE = D.DEPT_ID
+		       E.DEPT_CODE = D.DEPT_ID(+)
 		 ORDER
 		    BY
 		       SALARY ASC
