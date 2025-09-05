@@ -203,7 +203,7 @@ SELECT * FROM EMPLOYEE;
  * < ROLE >
  * 특정 권한들을 하나의 집합으로 모아놓은 것
  * 
- * CONNET, RESOURCE
+ * CONNECT, RESOURCE
  * (뭐 포함 안되어있어서 따로 줘야함?)
  * 
  * < 권한 회수 REVOKE >
